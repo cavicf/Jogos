@@ -16,7 +16,7 @@ class Jogo:
         self.preco = preco
         self.controlador = controlador
         self.__avaliacao = []
-        self.media = None
+        self.__media = 0
 
     @property
     def codigo(self):
@@ -42,6 +42,14 @@ class Jogo:
     def avaliacao(self):
         return self.__avaliacao
     
+    @property
+    def media(self):
+        return self.__media
+    
+    @media.setter
+    def media(self,valor):
+        self.__media = valor
+
     @codigo.setter
     def codigo(self, valor):
         listajogos = self.controlador.getLista()
@@ -92,16 +100,17 @@ class Jogo:
     
     def calcularmedia(self):
         media = sum(self.avaliacao)/len(self.avaliacao)
-        if media >= 0 or media <= 1:
+        if media >= 0 and media <= 1:
             self.media = 1
-        elif media > 1 or media <= 2:
+        elif media > 1 and media <= 2:
             self.media = 2
-        elif media > 2 or media <= 3:
+        elif media > 2 and media <= 3:
             self.media = 3
-        if media > 3 or media <= 4:
+        elif media > 3 and media <= 4:
             self.media = 4
         else:
             self.media = 5
+        return self.media
 
     def getJogo(self):
         return "Codigo: " + str(self.codigo)\
@@ -206,7 +215,7 @@ class viewAvaliar(tk.Toplevel):
         self.framebotao.pack()
         self.botaoavaliar = tk.Button(self.framebotao, text='Avaliar', command= self.controlador.Avaliar)
         self.botaoavaliar.pack(side='left', padx=10, pady=5)
-        self.botaolimpa = tk.Button(self.framebotao, text='Limpar', command=self.controlador.limparCampos)
+        self.botaolimpa = tk.Button(self.framebotao, text='Limpar', command=self.controlador.limparAvaliar)
         self.botaolimpa.pack(side='left', pady=5)
     
     def mostraJanela(self, titulo, msg):
@@ -223,7 +232,7 @@ class ControladorJogo:
         self.ViewCadastrar = ViewCadastrar(self)
 
     def ConsultarJogo(self):
-        self.viewconsultar = ViewConsultar(self)
+        self.ViewConsultar = ViewConsultar(self)
 
     def AvaliarJogo(self):
         self.ViewAvaliar = viewAvaliar(self)
@@ -252,6 +261,7 @@ class ControladorJogo:
             if jogo:
                 jogo.adicionarAvaliacao(int(avaliacao))
                 self.ViewAvaliar.mostraJanela('Sucesso:', 'Jogo avaliado!')
+                self.ViewAvaliar.destroy()
             else:
                 self.ViewAvaliar.mostraJanela('Erro:', 'Jogo não encontrado.')
         except ValueError as error:
@@ -259,15 +269,19 @@ class ControladorJogo:
 
 
     def procurarJogo(self, event):
-        avalsel = self.viewconsultar.escolhacombo.get()
-        self.viewconsultar.textjogo.config(state='normal')
-        self.viewconsultar.textjogo.delete(index1='1.0', index2=tk.END)
+        avalsel = int(self.ViewConsultar.escolhacombo.get())
+        self.ViewConsultar.textjogo.config(state='normal')
+        self.ViewConsultar.textjogo.delete('1.0', tk.END)
+        encontrou = False
         for jogo in self.listaJogos:
-            jogo.calcularmedia()
-            if jogo.media == avalsel:
+            mediajogo = jogo.calcularmedia()
+            if mediajogo == avalsel:
+                encontrou = True
                 jogoSel = jogo.getJogo() + '\n\n'
-                self.viewconsultar.textjogo.insert(index=1.0, chars=jogoSel) #vai inserir o texto dos vinhos para a caixa de texto
-        self.viewconsultar.textjogo.config(state='disabled')
+                self.ViewConsultar.textjogo.insert(tk.END, jogoSel)
+        if not encontrou:
+            self.ViewConsultar.textjogo.insert(tk.END, 'Nenhum jogo encontrado')
+        self.ViewConsultar.textjogo.config(state='disabled')
         
 
     def getjogodaLista(self, codigo):
@@ -287,5 +301,10 @@ class ControladorJogo:
         self.ViewCadastrar.inputconsole.delete(0, tk.END)
         self.ViewCadastrar.inputgenero.delete(0, tk.END)
         self.ViewCadastrar.inputpreco.delete(0, tk.END)
+
+    def limparAvaliar(self):
         self.ViewAvaliar.inputcodigo.delete(0, tk.END)
-        self.viewconsultar.escolhacombo.delete(0, tk.END)
+        self.ViewAvaliar.combo.set(value='')
+    
+        
+        
